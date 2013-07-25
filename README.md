@@ -1,21 +1,21 @@
-== Sample project with Rails 3 and Thinking Sphinx 3
+# Rails 3 and Thinking Sphinx 3
 
 I'm using thinking-sphinx to index my ```document``` model.
 
-I'm finding that ```rake ts:index``` never completes an index because the temporary index tables get so large (22G and rising). I'm looking for ways to optimise ```app/indices/document_index.rb``` so that it will finish in a reasonable amount of time without running my server out of disk space!
+I'm finding that ```rake ts:index``` is extremely slow and not finishing when there are more than 4 indexed associations.
 
 To simulate, run through the steps below and then edit ```app/indices/document_index.rb``` to uncomment some more of the index definitions. Then run ```rake ts:index``` and it will never finish!
 
 Note on the data: this is a slightly contrived example, but my real app has a similar data model where one particular model is often associated with all 243 countries (for example). I suspect this is creating very large join tables when sphinx is generating indexes so I'm wondering how to optmise this.
 
-== Setup
+## Setup
 
 0. You may need to install latest version of sphinx (2.0.X)... use "apt-get install sphinxsearch" (on ubuntu)
      Or run "searchd --version" to make sure you're using latest version (2.0.X). I'm using Sphinx 2.0.4-release (r3135)
 
 1. git clone this project
 
-2. edit ```config/database.yml``` to suit your db username/password preferences
+2. edit ```config/database.yml``` to suit your db username/password preferences (I'm using mysql)
 
 3. Run ```bundle install``` and then ```rake db:create db:migrate ts:rebuild```
 
@@ -27,22 +27,20 @@ Note on the data: this is a slightly contrived example, but my real app has a si
 
   I've commented out some of the indexes definitions in ```app/indices/document_index.rb``` so that it won't take forever to generate the index. If you uncomment a few of these and run ```rake ts:rebuild```, it will not finish indexing (beware this step can create very large tmp tables on your machine and you may run out of disk space before the process finishes. I was getting upwards of 22Gig files and then ran out of space!)
 
-Note: when I look at the mysql server, it is taking a long time on the 'copying tmp table to disk' action.
-If I run ```ll -h /tmp/#sql*``` then the index file there keeps on growing and growing.
-
-== Indexing stats
+## Indexing stats
 
 In ```app/indices/document_index.rb```:
 
-Using ``time rake ts:rebuild```, reports
+Using ```time rake ts:rebuild```, reports
 
 * 4   seconds - when 1 association  (images) is indexed
 * 6   seconds - when 2 associations (images and subscribers) are indexed
 * 23  seconds - when 2 associations (images and countries) are indexed
 * 115 seconds - when 3 associations (images, subscribers and tags) are indexed
 * 113 seconds - when 3 associations (images, subscribers and videos) are indexed (just to prove it's not specific problem to tags)
+* ꝏ          - when 4 associations or more are selected.
 
-== What sphinx is doing
+## What sphinx is doing
 
 Mysql takes forever to run the following thinking-sphinx query. This is found in ```config/development.sphinx.conf```
 
